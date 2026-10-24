@@ -1,0 +1,36 @@
+{
+  "crons": [
+    {
+      "path": "/api/mail/cron?token=${CRON_SECRET}",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/dispatch-emails?secret=${CRON_SECRET}",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/compute-trust?secret=${CRON_SECRET}",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/verification-scheduler?secret=${CRON_SECRET}",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/process-deletions?secret=${CRON_SECRET}",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/process-workflow-jobs?secret=${CRON_SECRET}",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/purge-expired-data?secret=${CRON_SECRET}",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/coco/cron/cleanup?secret=${CRON_SECRET}",
+      "schedule": "0 7 * * *"
+    }
+  ]
+}

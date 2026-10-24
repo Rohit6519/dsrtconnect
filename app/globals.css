@@ -1,0 +1,375 @@
+﻿@import '@xyflow/react/dist/style.css';
+@import "@fontsource/ibm-plex-sans/300.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode — warm neutrals */
+    --background: 30 20% 97%;
+    --foreground: 220 25% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 12%;
+
+    /* Cerulean blue as primary */
+    --primary: 203 89% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 25% 20%;
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 45 90% 50%;
+    --accent-foreground: 220 25% 12%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 203 89% 40%;
+    --radius: 0.5rem;
+
+    /* Custom skeuomorphic colors */
+    --cerulean: 203 89% 40%;
+    --cerulean-light: 203 70% 55%;
+    --cerulean-dark: 203 100% 25%;
+    --charcoal: 220 25% 12%;
+    --parchment: 40 30% 96%;
+  }
+
+  .dark {
+    /* Dark mode — deep charcoal + cerulean accents */
+    --background: 220 25% 8%;
+    --foreground: 220 10% 92%;
+    --card: 220 22% 11%;
+    --card-foreground: 220 10% 92%;
+    --popover: 220 22% 11%;
+    --popover-foreground: 220 10% 92%;
+
+    --primary: 203 89% 55%;
+    --primary-foreground: 220 25% 8%;
+
+    --secondary: 220 20% 16%;
+    --secondary-foreground: 220 10% 92%;
+    --muted: 220 20% 14%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 45 90% 55%;
+    --accent-foreground: 220 25% 8%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 203 89% 55%;
+
+    --cerulean: 203 89% 55%;
+    --cerulean-light: 203 70% 70%;
+    --cerulean-dark: 203 100% 30%;
+    --charcoal: 220 25% 8%;
+    --parchment: 40 15% 15%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  html {
+    font-size: 14px;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'ss01', 'ss02', 'cv11';
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+
+  .font-mono {
+    font-family: 'IBM Plex Mono', 'SF Mono', 'Courier New', monospace;
+    letter-spacing: 0.02em;
+  }
+
+  .label-mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+/* =====================================   SKEUOMORPHIC COMPONENTS   ============================================ */
+
+@layer components {
+  .skeu-card {
+    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.95) 100%);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .dark .skeu-card {
+    background: linear-gradient(145deg, hsl(220 22% 12%) 0%, hsl(220 25% 9%) 100%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  }
+
+  .skeu-inset {
+    background: hsl(var(--muted) / 0.5);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .dark .skeu-inset {
+    background: hsl(220 25% 6%);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.02);
+  }
+
+  .skeu-btn {
+    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.1s ease;
+  }
+
+  .skeu-btn:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .skeu-btn:active {
+    transform: translateY(0);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .dark .skeu-btn {
+    background: linear-gradient(145deg, hsl(220 22% 14%) 0%, hsl(220 25% 10%) 100%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  .skeu-btn-primary {
+    background: linear-gradient(145deg, hsl(var(--cerulean-light)) 0%, hsl(var(--cerulean)) 50%, hsl(var(--cerulean-dark)) 100%);
+    color: white;
+    border: 1px solid hsl(var(--cerulean-dark));
+    border-radius: var(--radius);
+    box-shadow: 0 1px 2px rgba(0, 100, 180, 0.2), 0 2px 6px rgba(0, 100, 180, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    transition: all 0.15s ease;
+  }
+
+  .skeu-btn-primary:hover {
+    box-shadow: 0 2px 4px rgba(0, 100, 180, 0.3), 0 4px 12px rgba(0, 100, 180, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .skeu-tab-bar {
+    background: hsl(var(--muted) / 0.3);
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) + 2px);
+    padding: 3px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .skeu-tab {
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    transition: all 0.15s ease;
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .skeu-tab:hover:not(.active) {
+    color: hsl(var(--foreground));
+    background: hsl(var(--muted) / 0.5);
+  }
+
+  .skeu-tab.active {
+    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.9) 100%);
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 1px solid hsl(var(--border));
+  }
+
+  .skeu-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent 100%);
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+    font-weight: 500;
+  }
+
+  .accent-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: hsl(var(--cerulean));
+    box-shadow: 0 0 8px hsl(var(--cerulean) / 0.5);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
+  }
+
+  .chip-cerulean {
+    background: hsl(var(--cerulean) / 0.1);
+    color: hsl(var(--cerulean));
+    border-color: hsl(var(--cerulean) / 0.3);
+  }
+
+  .chip-accent {
+    background: hsl(var(--accent) / 0.15);
+    color: hsl(45 90% 40%);
+    border-color: hsl(var(--accent) / 0.4);
+  }
+
+  .numeric {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+  border: 2px solid hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, hsl(var(--muted) / 0.4) 0%, hsl(var(--muted) / 0.6) 50%, hsl(var(--muted) / 0.4) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ===== TEAM UP ACCESSIBILITY & POLISH ===== */
+@media (prefers-reduced-motion: reduce) {
+  .team-up-no-motion,
+  .team-up-no-motion *,
+  .team-up-no-motion *::before,
+  .team-up-no-motion *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[data-teamup-search]:focus-visible,
+[role="tab"]:focus-visible,
+[role="searchbox"]:focus-visible {
+  outline: 2px solid rgb(63 63 70);
+  outline-offset: 2px;
+}
+
+/* TipTap prose overrides for opportunity content */
+.ProseMirror:focus-visible { outline: none; }
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: rgb(82 82 91);
+  pointer-events: none;
+  height: 0;
+}
+.ProseMirror ul[data-type="taskList"] { list-style: none; padding: 0; }
+.ProseMirror ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; }
+.ProseMirror ul[data-type="taskList"] li > label { flex-shrink: 0; margin-top: 0.25rem; }
+.ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
+  accent-color: rgb(59 130 246); width: 0.875rem; height: 0.875rem; cursor: pointer;
+}
+.ProseMirror hr { border: none; border-top: 1px solid rgb(39 39 42); margin: 1.5rem 0; }
+
+.ProseMirror .is-editor-empty:first-child::before {
+  content: attr(data-placeholder); float: left; color: rgb(82 82 91);
+  pointer-events: none; height: 0; white-space: pre-line; font-size: 16px; line-height: 1.75;
+}
+.ProseMirror p:empty::before { content: ''; }
+
+[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: rgb(82 82 91);
+  pointer-events: none;
+}
+
+/* Fallback letter C for missing Coco Icon */
+.fallback-coco {
+  font-family: 'IBM Plex Mono', monospace;
+  background: linear-gradient(180deg, #ffffff 0%, #a0a0a0 100%);
+  background-clip: text;            /* STANDARD property added here */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
