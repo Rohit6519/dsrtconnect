@@ -29,22 +29,32 @@ import {
   LockKey,
   DotsThree,
   PencilSimple,
+  Bell,
+  Phone,
+  Sparkle,
+  ArrowRight,
+  Lightning,
+  ChatCircleDots,
 } from "@phosphor-icons/react";
 import { DsrtAvatar } from "@/components/dsrt";
+import VoiceChannelSession from "./components/voice-channel-session";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const VideoMeeting = dynamic(() => import("./components/video-meeting"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex-1 flex flex-col items-center justify-center bg-[#0a0a0c] rounded-2xl w-full h-full">
-      <CircleNotch size={32} className="animate-spin text-[#38bdf8] mb-3" />
-      <p className="text-white/50 text-sm font-medium animate-pulse">
-        Initializing Video Call...
-      </p>
-    </div>
-  ),
-});
+const VideoMeeting = dynamic(
+  () => import("./components/voice-channel-session"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#0a0a0c] rounded-2xl w-full h-full">
+        <CircleNotch size={32} className="animate-spin text-[#38bdf8] mb-3" />
+        <p className="text-white/50 text-sm font-medium animate-pulse">
+          Initializing Video Call...
+        </p>
+      </div>
+    ),
+  },
+);
 
 interface Server {
   id: string;
@@ -134,6 +144,8 @@ export default function OpenMicPage() {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [showMembers, setShowMembers] = useState(true);
+  const [messageSearchQuery, setMessageSearchQuery] = useState("");
+  const [showCoco, setShowCoco] = useState(false);
   const [showServerMenu, setShowServerMenu] = useState(false);
   const [isVideoCall, setIsVideoCall] = useState(false);
 
@@ -369,8 +381,12 @@ export default function OpenMicPage() {
       } else if (inviteChannelId) {
         const target = chanList.find((c: Channel) => c.id === inviteChannelId);
         if (target) {
-          if (target.type === "voice") setActiveVoiceChannel(target);
-          else setActiveTextChannel(target);
+          if (target.type === "voice") {
+            setActiveVoiceChannel(target);
+          } else {
+            setActiveVoiceChannel(null);
+            setActiveTextChannel(target);
+          }
           if (target.server_id) {
             const srv = (serverList || []).find(
               (s: Server) => s.id === target.server_id,
@@ -394,6 +410,11 @@ export default function OpenMicPage() {
   const textChans = currentServerChannels.filter(
     (c) =>
       c.type === "text" &&
+      c.name.toLowerCase().includes(channelSearchQuery.toLowerCase()),
+  );
+  const voiceChans = currentServerChannels.filter(
+    (c) =>
+      c.type === "voice" &&
       c.name.toLowerCase().includes(channelSearchQuery.toLowerCase()),
   );
 
@@ -916,8 +937,12 @@ export default function OpenMicPage() {
       (c) => c.id === code || c.name.toLowerCase() === code.toLowerCase(),
     );
     if (target) {
-      if (target.type === "voice") setActiveVoiceChannel(target);
-      else setActiveTextChannel(target);
+      if (target.type === "voice") {
+        setActiveVoiceChannel(target);
+      } else {
+        setActiveVoiceChannel(null);
+        setActiveTextChannel(target);
+      }
       if (target.server_id) {
         const srv = servers.find((s) => s.id === target.server_id);
         if (srv) setActiveServer(srv);
@@ -1057,6 +1082,12 @@ export default function OpenMicPage() {
   };
 
   const visibleMessages = messages.filter((m) => !hiddenMessageIds.has(m.id));
+  const searchedMessages = visibleMessages.filter((m) => {
+    const q = messageSearchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const author = (m.user?.full_name || m.user?.username || "").toLowerCase();
+    return (m.content || "").toLowerCase().includes(q) || author.includes(q);
+  });
   const canEditSlogan =
     activeTextChannel?.created_by === currentUser?.id ||
     activeServer?.owner_id === currentUser?.id;
@@ -1246,7 +1277,10 @@ export default function OpenMicPage() {
                   return (
                     <div
                       key={ch.id}
-                      onClick={() => setActiveTextChannel(ch)}
+                      onClick={() => {
+                        setActiveVoiceChannel(null);
+                        setActiveTextChannel(ch);
+                      }}
                       className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all group/chan ${isActive ? "bg-[#38bdf8]/15 border border-[#38bdf8]/30 text-white font-semibold shadow-inner" : "text-white/60 hover:bg-white/[0.04] hover:text-white"}`}
                     >
                       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1298,6 +1332,45 @@ export default function OpenMicPage() {
                 })}
               </div>
             </div>
+            <div className="mt-5">
+              <div className="flex items-center justify-between px-2 mb-2">
+                <span className="text-[10.5px] font-mono font-bold text-white/40 uppercase tracking-widest">
+                  Voice Channels
+                </span>
+                <Radio size={14} className="text-white/35" />
+              </div>
+              <div className="space-y-1">
+                {voiceChans.map((ch) => {
+                  const isActive = activeVoiceChannel?.id === ch.id;
+                  return (
+                    <button
+                      key={ch.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveVoiceChannel(ch);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-all ${isActive ? "bg-emerald-500/10 border border-emerald-400/25 text-white" : "text-white/60 hover:bg-white/[0.04] hover:text-white"}`}
+                    >
+                      <Radio
+                        size={16}
+                        className={
+                          isActive ? "text-emerald-300" : "text-white/40"
+                        }
+                      />
+                      <span className="text-[13px] truncate">{ch.name}</span>
+                      {isActive && (
+                        <span className="ml-auto h-2 w-2 rounded-full bg-emerald-400" />
+                      )}
+                    </button>
+                  );
+                })}
+                {voiceChans.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-white/30">
+                    No voice channels in this server.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1324,453 +1397,698 @@ export default function OpenMicPage() {
         </div>
       </div>
 
-      {/* 3. MAIN CHAT AREA */}
+      {/* 3. MAIN CHAT / VOICE AREA */}
       <div className="flex-1 flex flex-col min-w-0 bg-gradient-to-br from-[#0c0c12] via-[#050505] to-[#000000] border border-white/[0.05] rounded-2xl relative shadow-2xl overflow-hidden">
-        <div className="h-16 px-6 flex items-center justify-between border-b border-white/[0.05] flex-shrink-0 z-10 bg-white/[0.01] backdrop-blur-md shadow-sm">
-          <div className="flex items-center gap-2.5 min-w-0">
-            {activeTextChannel?.logo_url ? (
-              <img
-                src={activeTextChannel.logo_url}
-                className="w-6 h-6 rounded-md object-cover shadow-sm"
-                alt=""
-              />
-            ) : (
-              <Chats
-                size={24}
-                className="text-[#38bdf8] shrink-0"
-                weight="fill"
-              />
-            )}
-            <h2 className="font-bold text-[16px] text-white tracking-tight truncate">
-              {activeTextChannel?.name || "general"}
-            </h2>
-            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md ml-2 shadow-sm">
-              <LockKey size={12} weight="fill" /> E2E Encrypted
-            </span>
-          </div>
-          <div className="flex items-center gap-3 text-white/50">
-            <button
-              onClick={handleStartVideoCall}
-              className={`p-2 rounded-xl hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer shadow-sm ${isVideoCall ? "text-[#38bdf8] bg-[#38bdf8]/10" : ""}`}
-              title="Start Video Meeting"
-            >
-              <VideoCamera
-                size={20}
-                weight={isVideoCall ? "fill" : "regular"}
-              />
-            </button>
-            <button
-              onClick={() => setShowMembers(!showMembers)}
-              className={`p-2 rounded-xl hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer shadow-sm ${showMembers ? "text-white bg-white/[0.08]" : ""}`}
-            >
-              <Users size={18} weight="bold" />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col justify-between p-6 min-h-0 relative">
-          {isVideoCall ? (
-            <div className="flex-1 flex flex-col h-full rounded-2xl overflow-hidden shadow-2xl border border-white/[0.05]">
-              <VideoMeeting
-                chatId={activeTextChannel?.id || "general"}
-                username={
-                  currentUser?.full_name || currentUser?.username || "Guest"
-                }
-                onClose={() => setIsVideoCall(false)}
-              />
-            </div>
-          ) : (
-            <>
-              <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-hide">
-                <div className="mb-8 pt-6 border-b border-white/[0.05] pb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#38bdf8]/20 to-[#2563eb]/10 border border-[#38bdf8]/30 rounded-[20px] flex items-center justify-center mb-4 text-[#38bdf8] shadow-[0_0_20px_rgba(56,189,248,0.15)] overflow-hidden">
-                    {activeTextChannel?.logo_url ? (
-                      <img
-                        src={activeTextChannel.logo_url}
-                        className="w-full h-full object-cover rounded-[20px]"
-                        alt=""
-                      />
-                    ) : (
-                      <Chats size={36} weight="duotone" />
-                    )}
-                  </div>
-                  <h1 className="text-[28px] font-extrabold text-white mb-2 tracking-tight">
-                    Welcome to #{activeTextChannel?.name}!
-                  </h1>
-
-                  {isEditingSlogan ? (
-                    <div className="mt-3 flex items-center gap-2 max-w-lg">
-                      <input
-                        value={editSloganText}
-                        onChange={(e) => setEditSloganText(e.target.value)}
-                        placeholder="Set a catchy slogan for this channel..."
-                        className="flex-1 bg-[#000000]/40 border border-[#38bdf8]/50 rounded-lg px-3 py-1.5 outline-none text-[13.5px] text-white shadow-inner"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleUpdateSlogan();
-                          if (e.key === "Escape") setIsEditingSlogan(false);
-                        }}
-                      />
-                      <button
-                        onClick={handleUpdateSlogan}
-                        disabled={updatingSlogan}
-                        className="bg-[#38bdf8] hover:bg-[#2ab0ec] text-black px-3 py-1.5 rounded-lg text-[13px] font-bold transition-colors disabled:opacity-50"
-                      >
-                        {updatingSlogan ? "Saving..." : "Save"}
-                      </button>
-                      <button
-                        onClick={() => setIsEditingSlogan(false)}
-                        className="text-white/50 hover:text-white px-2 text-[13px] transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 mt-1 group">
-                      <p className="text-[14px] text-white/50 leading-relaxed">
-                        {activeTextChannel?.description
-                          ? activeTextChannel.description
-                          : `This is the start of the #${activeTextChannel?.name || "channel"} channel on DSRT Open Mic. All messages are E2E encrypted.`}
-                      </p>
-                      {canEditSlogan && (
-                        <button
-                          onClick={() => {
-                            setEditSloganText(
-                              activeTextChannel?.description || "",
-                            );
-                            setIsEditingSlogan(true);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 text-white/40 hover:text-[#38bdf8] transition-all p-1.5 hover:bg-white/5 rounded-md cursor-pointer"
-                          title="Edit Channel Slogan"
-                        >
-                          <PencilSimple size={15} weight="bold" />
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {visibleMessages.map((msg) => {
-                  const isAudio = msg.content.includes("[VOICE_MESSAGE](");
-                  const isFile = msg.content.includes("[FILE_ATTACHMENT](");
-                  const isMine = msg.user_id === currentUser.id;
-
-                  let fileMetaStr = "";
-                  let textBody = msg.content;
-
-                  if (isFile) {
-                    const match = msg.content.match(
-                      /\[FILE_ATTACHMENT\]\(([^)]+)\)/,
-                    );
-                    if (match) {
-                      fileMetaStr = match[1];
-                      textBody = msg.content.replace(match[0], "").trim();
-                    }
-                  }
-
-                  let fileUrl = "",
-                    fileName = "Attached File",
-                    fileSize = "";
-                  if (fileMetaStr) {
-                    const parts = fileMetaStr.split("|");
-                    fileUrl = parts[0] || "";
-                    fileName = parts[1] || "File";
-                    fileSize = parts[2] || "";
-                  }
-
-                  const isImage =
-                    isFile && /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(fileName);
-                  const isVideo =
-                    isFile && /\.(mp4|webm|mov|mkv)$/i.test(fileName);
-
-                  return (
-                    <div
-                      key={msg.id}
-                      className="flex items-start gap-4 hover:bg-white/[0.02] -mx-4 px-4 py-2 rounded-2xl group transition-colors relative"
-                    >
-                      <DsrtAvatar
-                        src={msg.user?.avatar_url}
-                        name={msg.user?.full_name || "User"}
-                        size="md"
-                        className="w-10 h-10 rounded-xl mt-0.5 shrink-0 cursor-pointer shadow-sm border border-white/5"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-[14.5px] font-bold text-white hover:underline cursor-pointer tracking-tight">
-                            {msg.user?.full_name ||
-                              msg.user?.username ||
-                              "User"}
-                          </span>
-                          <span className="text-[11px] text-white/40 font-mono">
-                            {new Date(msg.created_at).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-
-                        {isAudio && (
-                          <div className="mt-2 bg-[#000000]/60 w-fit rounded-full pr-4 p-1.5 flex items-center gap-2 border border-white/10 shadow-sm backdrop-blur-md">
-                            <audio
-                              controls
-                              src={msg.content.slice(16, -1)}
-                              className="h-10 outline-none max-w-[250px] custom-audio"
-                            />
-                          </div>
-                        )}
-
-                        {isFile && (
-                          <div className="mt-2 max-w-md">
-                            {isImage ? (
-                              <div className="rounded-2xl overflow-hidden border border-white/10 max-h-80 bg-black/40 shadow-sm">
-                                <img
-                                  src={fileUrl}
-                                  alt={fileName}
-                                  className="w-full h-full object-cover max-h-80"
-                                />
-                              </div>
-                            ) : isVideo ? (
-                              <div className="rounded-2xl overflow-hidden border border-white/10 max-h-80 bg-black shadow-sm">
-                                <video
-                                  controls
-                                  src={fileUrl}
-                                  className="w-full max-h-80"
-                                />
-                              </div>
-                            ) : (
-                              <a
-                                href={fileUrl}
-                                target="_blank"
-                                download={fileName}
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-between gap-4 p-3.5 rounded-2xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-white/20 transition-all group/file shadow-sm backdrop-blur-sm"
-                              >
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <div className="w-10 h-10 rounded-xl bg-[#38bdf8]/10 border border-[#38bdf8]/20 flex items-center justify-center text-[#38bdf8] shrink-0">
-                                    <FileText size={20} weight="bold" />
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-[13.5px] font-semibold text-white truncate group-hover/file:text-[#38bdf8] transition-colors">
-                                      {fileName}
-                                    </p>
-                                    <p className="text-[11px] text-white/40 font-mono mt-0.5">
-                                      {fileSize}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0 group-hover/file:bg-white group-hover/file:text-black transition-colors shadow-sm">
-                                  <DownloadSimple size={16} weight="bold" />
-                                </div>
-                              </a>
-                            )}
-                          </div>
-                        )}
-
-                        {textBody && (
-                          <p className="text-[14.5px] text-white/80 leading-[1.6] break-words mt-1 font-sans select-text whitespace-pre-wrap">
-                            {textBody}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* 3-dot menu: Copy + Delete */}
-                      <div className="relative shrink-0 self-start mt-1">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMessageMenuId(
-                              messageMenuId === msg.id ? null : msg.id,
-                            );
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-                          title="Message options"
-                        >
-                          <DotsThree size={18} weight="bold" />
-                        </button>
-
-                        {messageMenuId === msg.id && (
-                          <div className="absolute right-0 top-8 z-50 w-44 bg-[#12121a] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                            <button
-                              type="button"
-                              onClick={() => handleCopyMessage(msg)}
-                              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer text-left"
-                            >
-                              <Copy size={15} />
-                              Copy
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMessageMenuId(null);
-                                setDeleteConfirmMsg(msg);
-                              }}
-                              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer text-left border-t border-white/[0.06]"
-                            >
-                              <Trash size={15} />
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                <div ref={chatEndRef} />
-              </div>
-
-              {showEmojiPicker && (
-                <div className="absolute bottom-20 right-6 z-50 shadow-2xl rounded-2xl overflow-hidden border border-white/10 animate-in slide-in-from-bottom-2 fade-in">
-                  <EmojiPicker
-                    theme={Theme.DARK}
-                    onEmojiClick={handleEmojiSelect}
-                    lazyLoadEmojis={true}
-                    searchPlaceHolder="Search emoji..."
+        {activeVoiceChannel ? (
+          <VoiceChannelSession
+            key={activeVoiceChannel.id}
+            channelId={activeVoiceChannel.id}
+            channelName={activeVoiceChannel.name}
+            username={
+              currentUser?.full_name || currentUser?.username || "Guest"
+            }
+            userId={currentUser?.id || ""}
+            avatarUrl={currentUser?.avatar_url || null}
+            onLeave={() => {
+              setActiveVoiceChannel(null);
+            }}
+          />
+        ) : (
+          <>
+            <div className="h-16 px-6 flex items-center justify-between border-b border-white/[0.05] flex-shrink-0 z-10 bg-white/[0.01] backdrop-blur-md shadow-sm">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {activeTextChannel?.logo_url ? (
+                  <img
+                    src={activeTextChannel.logo_url}
+                    className="w-6 h-6 rounded-md object-cover shadow-sm"
+                    alt=""
                   />
-                </div>
-              )}
-
-              <div className="pt-3 relative">
-                <input
-                  ref={attachmentInputRef}
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
-
-                <form
-                  onSubmit={handleSendMessage}
-                  className="bg-[#000000]/60 backdrop-blur-xl border border-white/[0.08] focus-within:border-[#38bdf8]/50 rounded-2xl p-3.5 flex flex-col gap-3 transition-all shadow-2xl"
-                >
-                  {pendingAttachment && (
-                    <div className="p-2.5 px-3 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2 shadow-sm">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {pendingAttachment.previewUrl ? (
-                          <img
-                            src={pendingAttachment.previewUrl}
-                            alt=""
-                            className="w-10 h-10 rounded-lg object-cover border border-white/10 shrink-0 shadow-sm"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-[#38bdf8]/10 border border-[#38bdf8]/20 flex items-center justify-center text-[#38bdf8] shrink-0 shadow-sm">
-                            <FileText size={20} weight="bold" />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-semibold text-white truncate">
-                            {pendingAttachment.file.name}
-                          </p>
-                          <p className="text-[11px] text-white/40 font-mono">
-                            {(
-                              pendingAttachment.file.size /
-                              1024 /
-                              1024
-                            ).toFixed(1)}{" "}
-                            MB · Ready to send
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPendingAttachment(null)}
-                        className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
-                        title="Remove attachment"
-                      >
-                        <X size={14} weight="bold" />
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3 w-full">
+                ) : (
+                  <Chats
+                    size={24}
+                    className="text-[#38bdf8] shrink-0"
+                    weight="fill"
+                  />
+                )}
+                <h2 className="font-bold text-[16px] text-white tracking-tight truncate">
+                  {activeTextChannel?.name || "general"}
+                </h2>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md ml-2 shadow-sm">
+                  <LockKey size={12} weight="fill" /> E2E Encrypted
+                </span>
+              </div>
+              <div className="flex items-center gap-2 md:gap-3 text-white/50 shrink-0">
+                <label className="hidden md:flex items-center gap-2 w-44 xl:w-56 px-3 py-2 rounded-xl bg-black/30 border border-white/[0.08] focus-within:border-[#38bdf8]/50 transition-colors">
+                  <SearchIcon size={15} className="text-white/40 shrink-0" />
+                  <input
+                    value={messageSearchQuery}
+                    onChange={(e) => setMessageSearchQuery(e.target.value)}
+                    placeholder="Search messages..."
+                    className="w-full min-w-0 bg-transparent outline-none text-xs text-white placeholder:text-white/35"
+                    aria-label="Search messages in this channel"
+                  />
+                  {messageSearchQuery && (
                     <button
                       type="button"
-                      onClick={() => attachmentInputRef.current?.click()}
-                      disabled={uploadingFile}
-                      className="text-white/40 hover:text-white transition-colors bg-white/[0.04] hover:bg-white/[0.08] p-2 rounded-xl shrink-0 cursor-pointer disabled:opacity-40 shadow-sm"
-                      title="Attach file"
+                      onClick={() => setMessageSearchQuery("")}
+                      className="text-white/40 hover:text-white"
+                      aria-label="Clear search"
                     >
-                      {uploadingFile ? (
-                        <CircleNotch
-                          size={16}
-                          className="animate-spin text-[#38bdf8]"
-                        />
-                      ) : (
-                        <Plus size={18} weight="bold" />
-                      )}
+                      <X size={13} />
                     </button>
+                  )}
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    toast.info(
+                      "Notifications are shown here when notification integration is enabled.",
+                    )
+                  }
+                  className="hidden sm:inline-flex p-2 rounded-xl hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer"
+                  title="Notifications"
+                >
+                  <Bell size={19} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetVoice = voiceChans[0];
+                    if (targetVoice) {
+                      setActiveVoiceChannel(targetVoice);
+                    } else {
+                      toast.info(
+                        "Create a voice channel first, then join it here.",
+                      );
+                    }
+                  }}
+                  className="hidden sm:inline-flex p-2 rounded-xl hover:bg-white/[0.06] hover:text-[#38bdf8] transition-colors cursor-pointer"
+                  title="Join voice channel"
+                >
+                  <Phone size={18} />
+                </button>
+                <button
+                  onClick={handleStartVideoCall}
+                  className={`p-2 rounded-xl hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer shadow-sm ${isVideoCall ? "text-[#38bdf8] bg-[#38bdf8]/10" : ""}`}
+                  title="Start Video Meeting"
+                >
+                  <VideoCamera
+                    size={20}
+                    weight={isVideoCall ? "fill" : "regular"}
+                  />
+                </button>
+                <button
+                  onClick={() => setShowMembers(!showMembers)}
+                  className={`p-2 rounded-xl hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer shadow-sm ${showMembers ? "text-white bg-white/[0.08]" : ""}`}
+                  title={showMembers ? "Hide members" : "Show members"}
+                >
+                  <Users size={18} weight="bold" />
+                </button>
+              </div>
+            </div>
 
-                    {isRecording ? (
-                      <div className="flex-1 flex items-center gap-2 text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg animate-pulse shadow-sm border border-red-500/20">
-                        <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping" />
-                        <span className="font-semibold text-[13.5px]">
-                          Recording Voice Note... {recordingDuration}s
-                        </span>
+            <div className="flex-1 flex flex-col justify-between p-6 min-h-0 relative">
+              {isVideoCall && activeTextChannel ? (
+                <div className="flex-1 flex flex-col h-full rounded-2xl overflow-hidden shadow-2xl border border-white/[0.05]">
+                  <VideoMeeting
+                    key={`text-call-${activeTextChannel.id}`}
+                    channelId={activeTextChannel.id}
+                    channelName={activeTextChannel.name || "general"}
+                    username={
+                      currentUser?.full_name || currentUser?.username || "Guest"
+                    }
+                    userId={currentUser?.id || ""}
+                    avatarUrl={currentUser?.avatar_url || null}
+                    onLeave={() => setIsVideoCall(false)}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-hide">
+                    <div className="mb-8 pt-6 border-b border-white/[0.05] pb-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-[#38bdf8]/20 to-[#2563eb]/10 border border-[#38bdf8]/30 rounded-[20px] flex items-center justify-center mb-4 text-[#38bdf8] shadow-[0_0_20px_rgba(56,189,248,0.15)] overflow-hidden">
+                        {activeTextChannel?.logo_url ? (
+                          <img
+                            src={activeTextChannel.logo_url}
+                            className="w-full h-full object-cover rounded-[20px]"
+                            alt=""
+                          />
+                        ) : (
+                          <Chats size={36} weight="duotone" />
+                        )}
                       </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
-                        placeholder={`Message #${activeTextChannel?.name || "channel"}`}
-                        className="flex-1 bg-transparent outline-none text-white placeholder:text-white/30 text-[14.5px] min-w-0"
-                      />
+                      <h1 className="text-[28px] font-extrabold text-white mb-2 tracking-tight">
+                        Welcome to #{activeTextChannel?.name}!
+                      </h1>
+
+                      {isEditingSlogan ? (
+                        <div className="mt-3 flex items-center gap-2 max-w-lg">
+                          <input
+                            value={editSloganText}
+                            onChange={(e) => setEditSloganText(e.target.value)}
+                            placeholder="Set a catchy slogan for this channel..."
+                            className="flex-1 bg-[#000000]/40 border border-[#38bdf8]/50 rounded-lg px-3 py-1.5 outline-none text-[13.5px] text-white shadow-inner"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleUpdateSlogan();
+                              if (e.key === "Escape") setIsEditingSlogan(false);
+                            }}
+                          />
+                          <button
+                            onClick={handleUpdateSlogan}
+                            disabled={updatingSlogan}
+                            className="bg-[#38bdf8] hover:bg-[#2ab0ec] text-black px-3 py-1.5 rounded-lg text-[13px] font-bold transition-colors disabled:opacity-50"
+                          >
+                            {updatingSlogan ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            onClick={() => setIsEditingSlogan(false)}
+                            className="text-white/50 hover:text-white px-2 text-[13px] transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 mt-1 group">
+                          <p className="text-[14px] text-white/50 leading-relaxed">
+                            {activeTextChannel?.description
+                              ? activeTextChannel.description
+                              : `This is the start of the #${activeTextChannel?.name || "channel"} channel on DSRT Open Mic. All messages are E2E encrypted.`}
+                          </p>
+                          {canEditSlogan && (
+                            <button
+                              onClick={() => {
+                                setEditSloganText(
+                                  activeTextChannel?.description || "",
+                                );
+                                setIsEditingSlogan(true);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 text-white/40 hover:text-[#38bdf8] transition-all p-1.5 hover:bg-white/5 rounded-md cursor-pointer"
+                              title="Edit Channel Slogan"
+                            >
+                              <PencilSimple size={15} weight="bold" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {!messageSearchQuery && visibleMessages.length === 0 && (
+                      <section className="pb-5 mb-5 border-b border-white/[0.06] animate-in fade-in duration-300">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const input =
+                                document.querySelector<HTMLInputElement>(
+                                  'input[placeholder^="Message #"]',
+                                );
+                              input?.focus();
+                              setMessageInput("Hello everyone! 👋");
+                            }}
+                            className="group text-left p-4 rounded-2xl bg-gradient-to-br from-[#071d2a] to-[#0c111b] border border-[#38bdf8]/25 hover:border-[#38bdf8]/60 hover:-translate-y-0.5 transition-all duration-200 shadow-[0_8px_30px_rgba(0,0,0,0.15)]"
+                          >
+                            <span className="w-10 h-10 rounded-xl bg-[#38bdf8]/15 text-[#38bdf8] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                              <ChatCircleDots size={23} weight="duotone" />
+                            </span>
+                            <span className="block text-sm font-bold text-white mb-1">
+                              Send a message
+                            </span>
+                            <span className="block text-xs leading-relaxed text-white/50">
+                              Start the conversation with your community.
+                            </span>
+                            <ArrowRight
+                              size={17}
+                              className="text-[#38bdf8] mt-3 ml-auto"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowInviteModal(true)}
+                            className="group text-left p-4 rounded-2xl bg-gradient-to-br from-[#1b1028] to-[#0c111b] border border-fuchsia-500/20 hover:border-fuchsia-400/50 hover:-translate-y-0.5 transition-all duration-200"
+                          >
+                            <span className="w-10 h-10 rounded-xl bg-fuchsia-500/15 text-fuchsia-300 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                              <UserPlus size={23} weight="duotone" />
+                            </span>
+                            <span className="block text-sm font-bold text-white mb-1">
+                              Invite friends
+                            </span>
+                            <span className="block text-xs leading-relaxed text-white/50">
+                              Bring your friends into the DSRT community.
+                            </span>
+                            <ArrowRight
+                              size={17}
+                              className="text-fuchsia-300 mt-3 ml-auto"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowServerBrowser(true)}
+                            className="group text-left p-4 rounded-2xl bg-gradient-to-br from-[#092219] to-[#0c111b] border border-emerald-500/20 hover:border-emerald-400/50 hover:-translate-y-0.5 transition-all duration-200"
+                          >
+                            <span className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-300 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                              <Compass size={23} weight="duotone" />
+                            </span>
+                            <span className="block text-sm font-bold text-white mb-1">
+                              Explore channels
+                            </span>
+                            <span className="block text-xs leading-relaxed text-white/50">
+                              Find interesting topics and join discussions.
+                            </span>
+                            <ArrowRight
+                              size={17}
+                              className="text-emerald-300 mt-3 ml-auto"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleStartVideoCall}
+                            className="group text-left p-4 rounded-2xl bg-gradient-to-br from-[#21132c] to-[#0c111b] border border-violet-500/20 hover:border-violet-400/50 hover:-translate-y-0.5 transition-all duration-200"
+                          >
+                            <span className="w-10 h-10 rounded-xl bg-violet-500/15 text-violet-300 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                              <VideoCamera size={23} weight="duotone" />
+                            </span>
+                            <span className="block text-sm font-bold text-white mb-1">
+                              Join a voice chat
+                            </span>
+                            <span className="block text-xs leading-relaxed text-white/50">
+                              Start a video meeting with your community.
+                            </span>
+                            <ArrowRight
+                              size={17}
+                              className="text-violet-300 mt-3 ml-auto"
+                            />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2 mb-3 text-white/85">
+                          <Lightning
+                            size={19}
+                            weight="fill"
+                            className="text-[#38bdf8]"
+                          />
+                          <h2 className="text-sm font-bold">
+                            Community activity
+                          </h2>
+                          <span className="text-[10px] uppercase tracking-wider text-white/35 ml-auto">
+                            Live data
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                          <div className="p-3.5 rounded-xl bg-white/[0.025] border border-white/[0.06] flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-[#38bdf8]/10 text-[#38bdf8] flex items-center justify-center shrink-0">
+                              <Users size={18} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-white">
+                                {onlineUsers.length} members online
+                              </p>
+                              <p className="text-[11px] text-white/45 mt-1">
+                                See who's around and start a conversation.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="p-3.5 rounded-xl bg-white/[0.025] border border-white/[0.06] flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-violet-500/10 text-violet-300 flex items-center justify-center shrink-0">
+                              <Chats size={18} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-white">
+                                {textChans.length} text channels
+                              </p>
+                              <p className="text-[11px] text-white/45 mt-1">
+                                Choose a topic and share your ideas.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="p-3.5 rounded-xl bg-white/[0.025] border border-white/[0.06] flex items-start gap-3 md:col-span-2 xl:col-span-1">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-300 flex items-center justify-center shrink-0">
+                              <LockKey size={18} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-white">
+                                Keep the community safe
+                              </p>
+                              <p className="text-[11px] text-white/45 mt-1">
+                                Be respectful and never share sensitive
+                                information.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </section>
                     )}
 
-                    <div className="flex items-center gap-2 text-white/40 shrink-0">
-                      {!isRecording && (
+                    {messageSearchQuery && searchedMessages.length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <SearchIcon size={28} className="text-white/25 mb-3" />
+                        <p className="text-sm font-semibold text-white/70">
+                          No messages found
+                        </p>
+                        <p className="text-xs text-white/40 mt-1">
+                          Try another keyword or clear the search.
+                        </p>
                         <button
                           type="button"
-                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                          className={`p-2 transition-colors cursor-pointer rounded-xl ${showEmojiPicker ? "bg-white/10 text-[#38bdf8]" : "hover:bg-white/5 hover:text-white"}`}
+                          onClick={() => setMessageSearchQuery("")}
+                          className="mt-3 text-xs text-[#38bdf8] hover:text-white"
                         >
-                          <Smiley
-                            size={22}
-                            weight={showEmojiPicker ? "fill" : "regular"}
+                          Clear search
+                        </button>
+                      </div>
+                    )}
+
+                    {searchedMessages.map((msg) => {
+                      const isAudio = msg.content.includes("[VOICE_MESSAGE](");
+                      const isFile = msg.content.includes("[FILE_ATTACHMENT](");
+                      const isMine = msg.user_id === currentUser.id;
+
+                      let fileMetaStr = "";
+                      let textBody = msg.content;
+
+                      if (isFile) {
+                        const match = msg.content.match(
+                          /\[FILE_ATTACHMENT\]\(([^)]+)\)/,
+                        );
+                        if (match) {
+                          fileMetaStr = match[1];
+                          textBody = msg.content.replace(match[0], "").trim();
+                        }
+                      }
+
+                      let fileUrl = "",
+                        fileName = "Attached File",
+                        fileSize = "";
+                      if (fileMetaStr) {
+                        const parts = fileMetaStr.split("|");
+                        fileUrl = parts[0] || "";
+                        fileName = parts[1] || "File";
+                        fileSize = parts[2] || "";
+                      }
+
+                      const isImage =
+                        isFile &&
+                        /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(fileName);
+                      const isVideo =
+                        isFile && /\.(mp4|webm|mov|mkv)$/i.test(fileName);
+
+                      return (
+                        <div
+                          key={msg.id}
+                          className="flex items-start gap-4 hover:bg-white/[0.02] -mx-4 px-4 py-2 rounded-2xl group transition-colors relative"
+                        >
+                          <DsrtAvatar
+                            src={msg.user?.avatar_url}
+                            name={msg.user?.full_name || "User"}
+                            size="md"
+                            className="w-10 h-10 rounded-xl mt-0.5 shrink-0 cursor-pointer shadow-sm border border-white/5"
                           />
-                        </button>
-                      )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-[14.5px] font-bold text-white hover:underline cursor-pointer tracking-tight">
+                                {msg.user?.full_name ||
+                                  msg.user?.username ||
+                                  "User"}
+                              </span>
+                              <span className="text-[11px] text-white/40 font-mono">
+                                {new Date(msg.created_at).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                )}
+                              </span>
+                            </div>
 
-                      {isRecording ? (
-                        <button
-                          type="button"
-                          onClick={stopRecording}
-                          className="text-red-400 hover:text-red-300 p-2 bg-red-500/20 rounded-xl transition-colors cursor-pointer shadow-md"
-                        >
-                          <PaperPlaneRight size={18} weight="fill" />
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={startRecording}
-                          className="hover:text-white p-2 hover:bg-white/[0.06] rounded-xl transition-colors cursor-pointer"
-                          title="Send Voice Note"
-                        >
-                          <Microphone size={20} weight="bold" />
-                        </button>
-                      )}
-
-                      {!isRecording &&
-                        (messageInput.trim().length > 0 ||
-                          pendingAttachment !== null) && (
-                          <button
-                            type="submit"
-                            disabled={sendingMsg}
-                            className="text-[#38bdf8] hover:text-white transition-colors cursor-pointer p-1"
-                          >
-                            {sendingMsg ? (
-                              <CircleNotch size={20} className="animate-spin" />
-                            ) : (
-                              <PaperPlaneRight size={24} weight="fill" />
+                            {isAudio && (
+                              <div className="mt-2 bg-[#000000]/60 w-fit rounded-full pr-4 p-1.5 flex items-center gap-2 border border-white/10 shadow-sm backdrop-blur-md">
+                                <audio
+                                  controls
+                                  src={msg.content.slice(16, -1)}
+                                  className="h-10 outline-none max-w-[250px] custom-audio"
+                                />
+                              </div>
                             )}
-                          </button>
-                        )}
-                    </div>
+
+                            {isFile && (
+                              <div className="mt-2 max-w-md">
+                                {isImage ? (
+                                  <div className="rounded-2xl overflow-hidden border border-white/10 max-h-80 bg-black/40 shadow-sm">
+                                    <img
+                                      src={fileUrl}
+                                      alt={fileName}
+                                      className="w-full h-full object-cover max-h-80"
+                                    />
+                                  </div>
+                                ) : isVideo ? (
+                                  <div className="rounded-2xl overflow-hidden border border-white/10 max-h-80 bg-black shadow-sm">
+                                    <video
+                                      controls
+                                      src={fileUrl}
+                                      className="w-full max-h-80"
+                                    />
+                                  </div>
+                                ) : (
+                                  <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    download={fileName}
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-between gap-4 p-3.5 rounded-2xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-white/20 transition-all group/file shadow-sm backdrop-blur-sm"
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-10 h-10 rounded-xl bg-[#38bdf8]/10 border border-[#38bdf8]/20 flex items-center justify-center text-[#38bdf8] shrink-0">
+                                        <FileText size={20} weight="bold" />
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-[13.5px] font-semibold text-white truncate group-hover/file:text-[#38bdf8] transition-colors">
+                                          {fileName}
+                                        </p>
+                                        <p className="text-[11px] text-white/40 font-mono mt-0.5">
+                                          {fileSize}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0 group-hover/file:bg-white group-hover/file:text-black transition-colors shadow-sm">
+                                      <DownloadSimple size={16} weight="bold" />
+                                    </div>
+                                  </a>
+                                )}
+                              </div>
+                            )}
+
+                            {textBody && (
+                              <p className="text-[14.5px] text-white/80 leading-[1.6] break-words mt-1 font-sans select-text whitespace-pre-wrap">
+                                {textBody}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* 3-dot menu: Copy + Delete */}
+                          <div className="relative shrink-0 self-start mt-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMessageMenuId(
+                                  messageMenuId === msg.id ? null : msg.id,
+                                );
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                              title="Message options"
+                            >
+                              <DotsThree size={18} weight="bold" />
+                            </button>
+
+                            {messageMenuId === msg.id && (
+                              <div className="absolute right-0 top-8 z-50 w-44 bg-[#12121a] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyMessage(msg)}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer text-left"
+                                >
+                                  <Copy size={15} />
+                                  Copy
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMessageMenuId(null);
+                                    setDeleteConfirmMsg(msg);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer text-left border-t border-white/[0.06]"
+                                >
+                                  <Trash size={15} />
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={chatEndRef} />
                   </div>
-                </form>
-              </div>
-            </>
-          )}
-        </div>
+
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-20 right-6 z-50 shadow-2xl rounded-2xl overflow-hidden border border-white/10 animate-in slide-in-from-bottom-2 fade-in">
+                      <EmojiPicker
+                        theme={Theme.DARK}
+                        onEmojiClick={handleEmojiSelect}
+                        lazyLoadEmojis={true}
+                        searchPlaceHolder="Search emoji..."
+                      />
+                    </div>
+                  )}
+
+                  <div className="pt-3 relative">
+                    <input
+                      ref={attachmentInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+
+                    <form
+                      onSubmit={handleSendMessage}
+                      className="bg-[#000000]/60 backdrop-blur-xl border border-white/[0.08] focus-within:border-[#38bdf8]/50 rounded-2xl p-3.5 flex flex-col gap-3 transition-all shadow-2xl"
+                    >
+                      {pendingAttachment && (
+                        <div className="p-2.5 px-3 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2 shadow-sm">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {pendingAttachment.previewUrl ? (
+                              <img
+                                src={pendingAttachment.previewUrl}
+                                alt=""
+                                className="w-10 h-10 rounded-lg object-cover border border-white/10 shrink-0 shadow-sm"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-[#38bdf8]/10 border border-[#38bdf8]/20 flex items-center justify-center text-[#38bdf8] shrink-0 shadow-sm">
+                                <FileText size={20} weight="bold" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[13px] font-semibold text-white truncate">
+                                {pendingAttachment.file.name}
+                              </p>
+                              <p className="text-[11px] text-white/40 font-mono">
+                                {(
+                                  pendingAttachment.file.size /
+                                  1024 /
+                                  1024
+                                ).toFixed(1)}{" "}
+                                MB · Ready to send
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setPendingAttachment(null)}
+                            className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                            title="Remove attachment"
+                          >
+                            <X size={14} weight="bold" />
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-3 w-full">
+                        <button
+                          type="button"
+                          onClick={() => attachmentInputRef.current?.click()}
+                          disabled={uploadingFile}
+                          className="text-white/40 hover:text-white transition-colors bg-white/[0.04] hover:bg-white/[0.08] p-2 rounded-xl shrink-0 cursor-pointer disabled:opacity-40 shadow-sm"
+                          title="Attach file"
+                        >
+                          {uploadingFile ? (
+                            <CircleNotch
+                              size={16}
+                              className="animate-spin text-[#38bdf8]"
+                            />
+                          ) : (
+                            <Plus size={18} weight="bold" />
+                          )}
+                        </button>
+
+                        {isRecording ? (
+                          <div className="flex-1 flex items-center gap-2 text-red-400 bg-red-500/10 px-3 py-1.5 rounded-lg animate-pulse shadow-sm border border-red-500/20">
+                            <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping" />
+                            <span className="font-semibold text-[13.5px]">
+                              Recording Voice Note... {recordingDuration}s
+                            </span>
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            value={messageInput}
+                            onChange={(e) => setMessageInput(e.target.value)}
+                            placeholder={`Message #${activeTextChannel?.name || "channel"}`}
+                            className="flex-1 bg-transparent outline-none text-white placeholder:text-white/30 text-[14.5px] min-w-0"
+                          />
+                        )}
+
+                        <div className="flex items-center gap-2 text-white/40 shrink-0">
+                          {!isRecording && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setShowEmojiPicker(!showEmojiPicker)
+                              }
+                              className={`p-2 transition-colors cursor-pointer rounded-xl ${showEmojiPicker ? "bg-white/10 text-[#38bdf8]" : "hover:bg-white/5 hover:text-white"}`}
+                            >
+                              <Smiley
+                                size={22}
+                                weight={showEmojiPicker ? "fill" : "regular"}
+                              />
+                            </button>
+                          )}
+
+                          {isRecording ? (
+                            <button
+                              type="button"
+                              onClick={stopRecording}
+                              className="text-red-400 hover:text-red-300 p-2 bg-red-500/20 rounded-xl transition-colors cursor-pointer shadow-md"
+                            >
+                              <PaperPlaneRight size={18} weight="fill" />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={startRecording}
+                              className="hover:text-white p-2 hover:bg-white/[0.06] rounded-xl transition-colors cursor-pointer"
+                              title="Send Voice Note"
+                            >
+                              <Microphone size={20} weight="bold" />
+                            </button>
+                          )}
+
+                          {!isRecording &&
+                            (messageInput.trim().length > 0 ||
+                              pendingAttachment !== null) && (
+                              <button
+                                type="submit"
+                                disabled={sendingMsg}
+                                className="text-[#38bdf8] hover:text-white transition-colors cursor-pointer p-1"
+                              >
+                                {sendingMsg ? (
+                                  <CircleNotch
+                                    size={20}
+                                    className="animate-spin"
+                                  />
+                                ) : (
+                                  <PaperPlaneRight size={24} weight="fill" />
+                                )}
+                              </button>
+                            )}
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* 4. RIGHT MEMBER LIST */}
@@ -1803,6 +2121,93 @@ export default function OpenMicPage() {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="p-3 border-t border-white/[0.06] bg-black/20">
+            <button
+              type="button"
+              onClick={() => setShowCoco((value) => !value)}
+              className="w-full flex items-center gap-3 p-3 rounded-2xl border border-[#8b5cf6]/30 bg-gradient-to-r from-[#111329] to-[#0b1420] hover:border-[#8b5cf6]/60 hover:shadow-[0_0_24px_rgba(139,92,246,0.12)] transition-all text-left"
+            >
+              <span className="w-10 h-10 rounded-full bg-gradient-to-br from-[#38bdf8] to-[#8b5cf6] text-white flex items-center justify-center shadow-[0_0_18px_rgba(139,92,246,0.3)]">
+                <Sparkle size={21} weight="fill" />
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="flex items-center gap-1.5 text-xs font-bold text-white">
+                  Ask COCO{" "}
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-200">
+                    AI
+                  </span>
+                </span>
+                <span className="block text-[10px] text-white/45 mt-1 leading-relaxed">
+                  Summarize, search or ask about this server
+                </span>
+              </span>
+              <ArrowRight size={16} className="text-[#a78bfa] shrink-0" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showCoco && (
+        <div className="fixed bottom-24 right-5 z-[100] w-[min(360px,calc(100vw-2rem))] rounded-2xl border border-violet-400/25 bg-[#0b0e17]/95 backdrop-blur-2xl shadow-[0_20px_80px_rgba(0,0,0,0.65)] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.08] bg-gradient-to-r from-violet-500/10 to-cyan-500/10">
+            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#38bdf8] to-[#8b5cf6] flex items-center justify-center text-white">
+              <Sparkle size={19} weight="fill" />
+            </span>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-white">COCO Assistant</p>
+              <p className="text-[10px] text-white/45">
+                UI preview · AI endpoint not connected
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCoco(false)}
+              className="p-1.5 rounded-lg text-white/45 hover:text-white hover:bg-white/10"
+              aria-label="Close COCO"
+            >
+              <X size={17} />
+            </button>
+          </div>
+          <div className="p-4 space-y-3">
+            <p className="text-xs leading-relaxed text-white/65">
+              Hi! I can help you get started. Choose an action to prepare a
+              prompt in the message box.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setMessageInput(
+                  `Summarize the recent discussion in #${activeTextChannel?.name || "channel"}.`,
+                );
+                setShowCoco(false);
+              }}
+              className="w-full flex items-center gap-2.5 text-left p-3 rounded-xl border border-white/[0.08] bg-white/[0.025] hover:bg-white/[0.06] transition-colors"
+            >
+              <ChatCircleDots size={17} className="text-[#38bdf8]" />
+              <span className="text-xs text-white/80">
+                Summarize this channel
+              </span>
+              <ArrowRight size={14} className="ml-auto text-white/35" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMessageInput(
+                  "Help me write a friendly reply to the latest message.",
+                );
+                setShowCoco(false);
+              }}
+              className="w-full flex items-center gap-2.5 text-left p-3 rounded-xl border border-white/[0.08] bg-white/[0.025] hover:bg-white/[0.06] transition-colors"
+            >
+              <Sparkle size={17} className="text-violet-300" />
+              <span className="text-xs text-white/80">Draft a reply</span>
+              <ArrowRight size={14} className="ml-auto text-white/35" />
+            </button>
+            <p className="text-[10px] leading-relaxed text-white/35">
+              These actions only prepare a prompt. To get AI answers, connect
+              COCO to a secure server-side AI endpoint.
+            </p>
           </div>
         </div>
       )}
